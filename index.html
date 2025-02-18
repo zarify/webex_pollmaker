@@ -52,15 +52,22 @@
         .form-group-inline input[type="checkbox"] {
             margin-right: 5px;
         }
-        button {
+        .custom-file-upload {
+            display: inline-block !important;
+            width: auto;
+        }
+        button, .custom-file-upload {
             padding: 10px 15px;
             background-color: #007bff;
-            color: #fff;
+            color: #fff !important;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            display: inline-block;
+            font-family: Arial, sans-serif; /* Ensure the same font family */
+            font-size: 14px; /* Ensure the same font size */
         }
-        button:hover {
+        button:hover, .custom-file-upload:hover {
             background-color: #0056b3;
         }
         .question-form {
@@ -107,7 +114,7 @@
             <label for="poll-type">Type:</label>
             <select id="poll-type">
                 <option value="anonymous">Anonymous</option>
-                <option value="named">Named</option>
+                <option value="named" selected>Named</option>
             </select>
         </div>
         <div class="form-group-inline">
@@ -119,11 +126,11 @@
             <input type="text" id="alarm" placeholder="5:0">
         </div>
         <div class="form-group-inline">
-            <input type="checkbox" id="no-answer">
+            <input type="checkbox" id="no-answer" checked>
             <label for="no-answer">No Answer</label>
         </div>
         <div class="form-group-inline">
-            <input type="checkbox" id="show-response">
+            <input type="checkbox" id="show-response" checked>
             <label for="show-response">Show Response</label>
         </div>
         <div class="form-group">
@@ -132,13 +139,22 @@
         </div>
         <div class="form-group">
             <button onclick="saveXML()">💾 Save File</button>
+            <label for="load-file" class="custom-file-upload">📂 Load File</label>
+            <input type="file" id="load-file" accept=".atp" onchange="loadXML(event)" style="display: none;">
+            <br>
             <button onclick="resetQuestions()">♻ Reset Questions</button>
         </div>
     </div>
     <div id="questions" class="section question-list">
         <h2>Created Questions</h2>
     </div>
-    <div class="section question-form">
+    <div id="question-buttons" class="section question-form">
+        <h2>Add Question</h2>
+        <button onclick="showQuestionForm('mcq')">Add Multiple Choice Question</button>
+        <button onclick="showQuestionForm('msq')">Add Multi-Select Question</button>
+        <button onclick="showQuestionForm('saq')">Add Short Answer Question</button>
+    </div>
+    <div id="mcq-form" class="section question-form" style="display:none;">
         <h2>Add Multiple Choice Question</h2>
         <div class="form-group">
             <input type="text" id="mcq-title" placeholder="Question Title">
@@ -146,9 +162,9 @@
         <div id="mcq-answers" class="answer-list"></div>
         <button onclick="addMCQAnswer()">Add Answer</button>
         <button onclick="addMultipleChoiceQuestion()">Finish Question</button>
-        <button onclick="cancelMultipleChoiceQuestion()" id="mcq-cancel" style="display:none;">Cancel</button>
+        <button onclick="cancelQuestion()">Cancel</button>
     </div>
-    <div class="section question-form">
+    <div id="msq-form" class="section question-form" style="display:none;">
         <h2>Add Multi-Select Question</h2>
         <div class="form-group">
             <input type="text" id="msq-title" placeholder="Question Title">
@@ -156,18 +172,20 @@
         <div id="msq-answers" class="answer-list"></div>
         <button onclick="addMSQAnswer()">Add Answer</button>
         <button onclick="addMultiSelectQuestion()">Finish Question</button>
-        <button onclick="cancelMultiSelectQuestion()" id="msq-cancel" style="display:none;">Cancel</button>
+        <button onclick="cancelQuestion()">Cancel</button>
     </div>
-    <div class="section question-form">
+    <div id="saq-form" class="section question-form" style="display:none;">
         <h2>Add Short Answer Question</h2>
         <div class="form-group">
             <input type="text" id="saq-title" placeholder="Question Title">
         </div>
         <button onclick="addShortAnswerQuestion()">Finish Question</button>
+        <button onclick="cancelQuestion()">Cancel</button>
     </div>
 
     <script>
         const questions = [];
+        let editingIndex = null;
 
         function toggleAlarmField() {
             const showTimer = document.getElementById('show-timer').checked;
@@ -205,6 +223,26 @@
             });
         }
 
+        function showQuestionForm(type) {
+            document.getElementById('question-buttons').style.display = 'none';
+            document.getElementById('mcq-form').style.display = type === 'mcq' ? 'block' : 'none';
+            document.getElementById('msq-form').style.display = type === 'msq' ? 'block' : 'none';
+            document.getElementById('saq-form').style.display = type === 'saq' ? 'block' : 'none';
+        }
+
+        function cancelQuestion() {
+            document.getElementById('question-buttons').style.display = 'block';
+            document.getElementById('mcq-form').style.display = 'none';
+            document.getElementById('msq-form').style.display = 'none';
+            document.getElementById('saq-form').style.display = 'none';
+            document.getElementById('mcq-title').value = '';
+            document.getElementById('mcq-answers').innerHTML = '';
+            document.getElementById('msq-title').value = '';
+            document.getElementById('msq-answers').innerHTML = '';
+            document.getElementById('saq-title').value = '';
+            editingIndex = null;
+        }
+
         function addMCQAnswer() {
             const answersDiv = document.getElementById('mcq-answers');
             const answerDiv = document.createElement('div');
@@ -214,15 +252,10 @@
                 <button onclick="deleteMCQAnswer(this)">Delete</button>
             `;
             answersDiv.appendChild(answerDiv);
-            document.getElementById('mcq-cancel').style.display = 'inline-block';
         }
 
         function deleteMCQAnswer(button) {
             button.parentElement.remove();
-            const answersDiv = document.getElementById('mcq-answers');
-            if (answersDiv.children.length === 0) {
-                document.getElementById('mcq-cancel').style.display = 'none';
-            }
         }
 
         function addMSQAnswer() {
@@ -234,15 +267,10 @@
                 <button onclick="deleteMSQAnswer(this)">Delete</button>
             `;
             answersDiv.appendChild(answerDiv);
-            document.getElementById('msq-cancel').style.display = 'inline-block';
         }
 
         function deleteMSQAnswer(button) {
             button.parentElement.remove();
-            const answersDiv = document.getElementById('msq-answers');
-            if (answersDiv.children.length === 0) {
-                document.getElementById('msq-cancel').style.display = 'none';
-            }
         }
 
         function addMultipleChoiceQuestion() {
@@ -254,17 +282,14 @@
                 const isCorrect = answerDiv.querySelector('input[type="checkbox"]').checked;
                 answers.push({ text: escapeXML(text), isCorrect });
             });
-            questions.push({ type: 'mcone', title: escapeXML(title), answers });
+            const question = { type: 'mcone', title: escapeXML(title), answers };
+            if (editingIndex !== null) {
+                questions[editingIndex] = question;
+            } else {
+                questions.push(question);
+            }
             renderQuestions();
-            document.getElementById('mcq-title').value = '';
-            answersDiv.innerHTML = '';
-            document.getElementById('mcq-cancel').style.display = 'none';
-        }
-
-        function cancelMultipleChoiceQuestion() {
-            document.getElementById('mcq-title').value = '';
-            document.getElementById('mcq-answers').innerHTML = '';
-            document.getElementById('mcq-cancel').style.display = 'none';
+            cancelQuestion();
         }
 
         function addMultiSelectQuestion() {
@@ -276,29 +301,68 @@
                 const isCorrect = answerDiv.querySelector('input[type="checkbox"]').checked;
                 answers.push({ text: escapeXML(text), isCorrect });
             });
-            questions.push({ type: 'mcmany', title: escapeXML(title), answers });
+            const question = { type: 'mcmany', title: escapeXML(title), answers };
+            if (editingIndex !== null) {
+                questions[editingIndex] = question;
+            } else {
+                questions.push(question);
+            }
             renderQuestions();
-            document.getElementById('msq-title').value = '';
-            answersDiv.innerHTML = '';
-            document.getElementById('msq-cancel').style.display = 'none';
-        }
-
-        function cancelMultiSelectQuestion() {
-            document.getElementById('msq-title').value = '';
-            document.getElementById('msq-answers').innerHTML = '';
-            document.getElementById('msq-cancel').style.display = 'none';
+            cancelQuestion();
         }
 
         function addShortAnswerQuestion() {
             const title = document.getElementById('saq-title').value;
-            questions.push({ type: 'text', title: escapeXML(title) });
+            const question = { type: 'text', title: escapeXML(title) };
+            if (editingIndex !== null) {
+                questions[editingIndex] = question;
+            } else {
+                questions.push(question);
+            }
             renderQuestions();
-            document.getElementById('saq-title').value = '';
+            cancelQuestion();
         }
 
         function deleteQuestion(index) {
             questions.splice(index, 1);
             renderQuestions();
+        }
+
+        function editQuestion(index) {
+            const question = questions[index];
+            editingIndex = index;
+            if (question.type === 'mcone') {
+                document.getElementById('mcq-title').value = question.title;
+                const answersDiv = document.getElementById('mcq-answers');
+                answersDiv.innerHTML = '';
+                question.answers.forEach(answer => {
+                    const answerDiv = document.createElement('div');
+                    answerDiv.innerHTML = `
+                        <input type="text" value="${answer.text}">
+                        <input type="checkbox" ${answer.isCorrect ? 'checked' : ''}> Correct
+                        <button onclick="deleteMCQAnswer(this)">Delete</button>
+                    `;
+                    answersDiv.appendChild(answerDiv);
+                });
+                showQuestionForm('mcq');
+            } else if (question.type === 'mcmany') {
+                document.getElementById('msq-title').value = question.title;
+                const answersDiv = document.getElementById('msq-answers');
+                answersDiv.innerHTML = '';
+                question.answers.forEach(answer => {
+                    const answerDiv = document.createElement('div');
+                    answerDiv.innerHTML = `
+                        <input type="text" value="${answer.text}">
+                        <input type="checkbox" ${answer.isCorrect ? 'checked' : ''}> Correct
+                        <button onclick="deleteMSQAnswer(this)">Delete</button>
+                    `;
+                    answersDiv.appendChild(answerDiv);
+                });
+                showQuestionForm('msq');
+            } else if (question.type === 'text') {
+                document.getElementById('saq-title').value = question.title;
+                showQuestionForm('saq');
+            }
         }
 
         function renderQuestions() {
@@ -308,6 +372,7 @@
                 const questionDiv = document.createElement('div');
                 questionDiv.innerHTML = `
                     <button onclick="deleteQuestion(${index})">Delete</button>
+                    <button onclick="editQuestion(${index})">Edit</button>
                     <strong>Question ${index + 1}:</strong> ${question.title} (${question.type})
                 `;
                 questionsDiv.appendChild(questionDiv);
@@ -353,6 +418,46 @@
         function resetQuestions() {
             questions.length = 0;
             renderQuestions();
+        }
+
+        function loadXML(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+                const poll = xmlDoc.getElementsByTagName('POLL')[0];
+                document.getElementById('poll-type').value = poll.getAttribute('TYPE');
+                document.getElementById('show-timer').checked = poll.getAttribute('SHOWTIMER') === 'yes';
+                document.getElementById('alarm').value = poll.getAttribute('ALARM');
+                document.getElementById('no-answer').checked = poll.getAttribute('NOANSWER') === 'yes';
+                document.getElementById('show-response').checked = poll.getAttribute('SHOWRESPONSE') === 'yes';
+
+                questions.length = 0;
+                const questionNodes = poll.getElementsByTagName('QUESTION');
+                for (let i = 0; i < questionNodes.length; i++) {
+                    const questionNode = questionNodes[i];
+                    const type = questionNode.getAttribute('TYPE');
+                    const title = questionNode.getAttribute('TITLE');
+                    if (type === 'mcone' || type === 'mcmany') {
+                        const answers = [];
+                        const answerNodes = questionNode.getElementsByTagName('ANSWER');
+                        for (let j = 0; j < answerNodes.length; j++) {
+                            const answerNode = answerNodes[j];
+                            const text = answerNode.textContent;
+                            const isCorrect = answerNode.getAttribute('ISCORRECT') === 'true';
+                            answers.push({ text, isCorrect });
+                        }
+                        questions.push({ type, title, answers });
+                    } else if (type === 'text') {
+                        questions.push({ type, title });
+                    }
+                }
+                renderQuestions();
+            };
+            reader.readAsText(file);
         }
     </script>
 </body>
