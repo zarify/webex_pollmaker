@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webex Poll Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #555;
+        }
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group input[type="text"], .form-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .form-group-inline {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .form-group-inline label {
+            margin-right: 10px;
+            color: #333;
+        }
+        .form-group-inline input[type="checkbox"] {
+            margin-right: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .question-form {
+            margin-bottom: 20px;
+        }
+        .question-form div {
+            margin-bottom: 10px;
+        }
+        .question-list div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #e9ecef;
+        }
+        .question-list button {
+            margin-right: 10px;
+            background-color: #dc3545;
+        }
+        .question-list button:hover {
+            background-color: #c82333;
+        }
+        .answer-list div {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .answer-list button {
+            margin-left: 10px;
+            background-color: #dc3545;
+        }
+        .answer-list button:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Webex Poll Creator</h1>
+    <div class="section">
+        <h2>Poll Settings</h2>
+        <div class="form-group">
+            <label for="poll-type">Type:</label>
+            <select id="poll-type">
+                <option value="anonymous">Anonymous</option>
+                <option value="named">Named</option>
+            </select>
+        </div>
+        <div class="form-group-inline">
+            <input type="checkbox" id="show-timer" onchange="toggleAlarmField()">
+            <label for="show-timer">Show Timer</label>
+        </div>
+        <div class="form-group" id="alarm-group" style="display: none;">
+            <label for="alarm">Alarm (minutes:seconds):</label>
+            <input type="text" id="alarm" placeholder="5:0">
+        </div>
+        <div class="form-group-inline">
+            <input type="checkbox" id="no-answer">
+            <label for="no-answer">No Answer</label>
+        </div>
+        <div class="form-group-inline">
+            <input type="checkbox" id="show-response">
+            <label for="show-response">Show Response</label>
+        </div>
+        <div class="form-group">
+            <label for="file-name">File Name:</label>
+            <input type="text" id="file-name" placeholder="questions">
+        </div>
+        <div class="form-group">
+            <button onclick="saveXML()">💾 Save File</button>
+            <button onclick="resetQuestions()">♻ Reset Questions</button>
+        </div>
+    </div>
+    <div id="questions" class="section question-list">
+        <h2>Created Questions</h2>
+    </div>
+    <div class="section question-form">
+        <h2>Add Multiple Choice Question</h2>
+        <div class="form-group">
+            <input type="text" id="mcq-title" placeholder="Question Title">
+        </div>
+        <div id="mcq-answers" class="answer-list"></div>
+        <button onclick="addMCQAnswer()">Add Answer</button>
+        <button onclick="addMultipleChoiceQuestion()">Finish Question</button>
+        <button onclick="cancelMultipleChoiceQuestion()" id="mcq-cancel" style="display:none;">Cancel</button>
+    </div>
+    <div class="section question-form">
+        <h2>Add Multi-Select Question</h2>
+        <div class="form-group">
+            <input type="text" id="msq-title" placeholder="Question Title">
+        </div>
+        <div id="msq-answers" class="answer-list"></div>
+        <button onclick="addMSQAnswer()">Add Answer</button>
+        <button onclick="addMultiSelectQuestion()">Finish Question</button>
+        <button onclick="cancelMultiSelectQuestion()" id="msq-cancel" style="display:none;">Cancel</button>
+    </div>
+    <div class="section question-form">
+        <h2>Add Short Answer Question</h2>
+        <div class="form-group">
+            <input type="text" id="saq-title" placeholder="Question Title">
+        </div>
+        <button onclick="addShortAnswerQuestion()">Finish Question</button>
+    </div>
+
+    <script>
+        const questions = [];
+
+        function toggleAlarmField() {
+            const showTimer = document.getElementById('show-timer').checked;
+            const alarmGroup = document.getElementById('alarm-group');
+            if (showTimer) {
+                alarmGroup.style.display = 'block';
+            } else {
+                alarmGroup.style.display = 'none';
+                document.getElementById('alarm').value = '';
+            }
+        }
+
+        function validateAlarm() {
+            const showTimer = document.getElementById('show-timer').checked;
+            const alarm = document.getElementById('alarm').value;
+            if (showTimer) {
+                const regex = /^[0-9]+:[0-5][0-9]?$/;
+                if (!regex.test(alarm)) {
+                    alert('Alarm must be in the format M:S (e.g., 5:0)');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function escapeXML(str) {
+            return str.replace(/[<>&'"]/g, function (char) {
+                switch (char) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        function addMCQAnswer() {
+            const answersDiv = document.getElementById('mcq-answers');
+            const answerDiv = document.createElement('div');
+            answerDiv.innerHTML = `
+                <input type="text" placeholder="Answer Text">
+                <input type="checkbox"> Correct
+                <button onclick="deleteMCQAnswer(this)">Delete</button>
+            `;
+            answersDiv.appendChild(answerDiv);
+            document.getElementById('mcq-cancel').style.display = 'inline-block';
+        }
+
+        function deleteMCQAnswer(button) {
+            button.parentElement.remove();
+            const answersDiv = document.getElementById('mcq-answers');
+            if (answersDiv.children.length === 0) {
+                document.getElementById('mcq-cancel').style.display = 'none';
+            }
+        }
+
+        function addMSQAnswer() {
+            const answersDiv = document.getElementById('msq-answers');
+            const answerDiv = document.createElement('div');
+            answerDiv.innerHTML = `
+                <input type="text" placeholder="Answer Text">
+                <input type="checkbox"> Correct
+                <button onclick="deleteMSQAnswer(this)">Delete</button>
+            `;
+            answersDiv.appendChild(answerDiv);
+            document.getElementById('msq-cancel').style.display = 'inline-block';
+        }
+
+        function deleteMSQAnswer(button) {
+            button.parentElement.remove();
+            const answersDiv = document.getElementById('msq-answers');
+            if (answersDiv.children.length === 0) {
+                document.getElementById('msq-cancel').style.display = 'none';
+            }
+        }
+
+        function addMultipleChoiceQuestion() {
+            const title = document.getElementById('mcq-title').value;
+            const answersDiv = document.getElementById('mcq-answers');
+            const answers = [];
+            answersDiv.querySelectorAll('div').forEach(answerDiv => {
+                const text = answerDiv.querySelector('input[type="text"]').value;
+                const isCorrect = answerDiv.querySelector('input[type="checkbox"]').checked;
+                answers.push({ text: escapeXML(text), isCorrect });
+            });
+            questions.push({ type: 'mcone', title: escapeXML(title), answers });
+            renderQuestions();
+            document.getElementById('mcq-title').value = '';
+            answersDiv.innerHTML = '';
+            document.getElementById('mcq-cancel').style.display = 'none';
+        }
+
+        function cancelMultipleChoiceQuestion() {
+            document.getElementById('mcq-title').value = '';
+            document.getElementById('mcq-answers').innerHTML = '';
+            document.getElementById('mcq-cancel').style.display = 'none';
+        }
+
+        function addMultiSelectQuestion() {
+            const title = document.getElementById('msq-title').value;
+            const answersDiv = document.getElementById('msq-answers');
+            const answers = [];
+            answersDiv.querySelectorAll('div').forEach(answerDiv => {
+                const text = answerDiv.querySelector('input[type="text"]').value;
+                const isCorrect = answerDiv.querySelector('input[type="checkbox"]').checked;
+                answers.push({ text: escapeXML(text), isCorrect });
+            });
+            questions.push({ type: 'mcmany', title: escapeXML(title), answers });
+            renderQuestions();
+            document.getElementById('msq-title').value = '';
+            answersDiv.innerHTML = '';
+            document.getElementById('msq-cancel').style.display = 'none';
+        }
+
+        function cancelMultiSelectQuestion() {
+            document.getElementById('msq-title').value = '';
+            document.getElementById('msq-answers').innerHTML = '';
+            document.getElementById('msq-cancel').style.display = 'none';
+        }
+
+        function addShortAnswerQuestion() {
+            const title = document.getElementById('saq-title').value;
+            questions.push({ type: 'text', title: escapeXML(title) });
+            renderQuestions();
+            document.getElementById('saq-title').value = '';
+        }
+
+        function deleteQuestion(index) {
+            questions.splice(index, 1);
+            renderQuestions();
+        }
+
+        function renderQuestions() {
+            const questionsDiv = document.getElementById('questions');
+            questionsDiv.innerHTML = '<h2>Created Questions</h2>';
+            questions.forEach((question, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.innerHTML = `
+                    <button onclick="deleteQuestion(${index})">Delete</button>
+                    <strong>Question ${index + 1}:</strong> ${question.title} (${question.type})
+                `;
+                questionsDiv.appendChild(questionDiv);
+            });
+        }
+
+        function generateXML(questions) {
+            const pollType = document.getElementById('poll-type').value;
+            const showTimer = document.getElementById('show-timer').checked ? 'yes' : 'no';
+            const alarm = document.getElementById('alarm').value;
+            const noAnswer = document.getElementById('no-answer').checked ? 'yes' : 'no';
+            const showResponse = document.getElementById('show-response').checked ? 'yes' : 'no';
+
+            let xml = `<?xml version="1.0" encoding="UTF-16"?>\n<POLL TYPE="${pollType}" SHOWTIMER="${showTimer}" ALARM="${escapeXML(alarm)}" NOANSWER="${noAnswer}" SHOWRESPONSE="${showResponse}">\n`;
+            questions.forEach(question => {
+                if (question.type === 'mcone' || question.type === 'mcmany') {
+                    xml += `<QUESTION TYPE="${question.type}" TITLE="${question.title}">\n`;
+                    question.answers.forEach(answer => {
+                        xml += `<ANSWER ISCORRECT="${answer.isCorrect}">${answer.text}</ANSWER>\n`;
+                    });
+                    xml += '</QUESTION>\n';
+                } else if (question.type === 'text') {
+                    xml += `<QUESTION TYPE="text" TITLE="${question.title}">\n</QUESTION>\n`;
+                }
+            });
+            xml += '</POLL>';
+            return xml;
+        }
+
+        function saveXML() {
+            if (!validateAlarm()) {
+                return;
+            }
+            const xmlString = generateXML(questions);
+            const fileName = (document.getElementById('file-name').value || 'questions') + '.atp';
+            const blob = new Blob([xmlString], { type: 'text/xml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+
+        function resetQuestions() {
+            questions.length = 0;
+            renderQuestions();
+        }
+    </script>
+</body>
+</html>
