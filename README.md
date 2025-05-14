@@ -5,6 +5,14 @@ Webex has a rudimentary polling system built into it. It's ok, but not great, an
 
 This is a repo with some tools for creating poll files (`.atp` but really just XML) before meetings (or in my case, classes).
 
+These are all just plain web pages where everything runs client side. You put in some options, hit save, and the embedded JS gives you a poll file you can open with Webex next time you have a meeting. The aim was to be self-contained and be able to run anywhere without installing anything.
+
+## Generic poll creator (`index.html`)
+This lets you just create generic polls with most of the options available.
+
+## Exit poll creator (`topic_check.html`)
+This creator is specifically for presenting the same multi choice options for a series of questions. My use case is for exit polls for classes ("How well did you understand topic X" style questions - to get a vibe check for how a class went).
+
 # Things to note
 - There's a `CORRECT` attribute in the answer field, but Webex doesn't seem to do anything with this. I kept it in because maybe it will do something one day.
 - Webex activity reports will save poll results, so don't feel like you need to save the poll results web page that Webex gives you a link to (although it is nicer to look at than the CSV file of poll results)
