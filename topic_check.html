@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lesson Poll Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .section {
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        .form-group label {
+            flex: 1;
+            max-width: 150px;
+            margin-right: 10px;
+        }
+        .form-group input[type="text"], .form-group input[type="number"] {
+            flex: 2;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lesson Poll Creator</h1>
+    <div class="section">
+        <h2>Topics</h2>
+        <div class="form-group">
+            <label for="topic-name">Topic Name:</label>
+            <input type="text" id="topic-name" placeholder="Enter topic name">
+        </div>
+        <button onclick="addTopic()">Add Topic</button>
+    </div>
+    <div id="topics" class="section">
+        <h2>Created Topics</h2>
+    </div>
+    <div class="section">
+        <h2>Config</h2>
+        <div class="form-group">
+            <label for="response-options">Response Options:</label>
+            <input type="text" id="response-options" placeholder="Comma-separated (e.g., none, some, lots)">
+        </div>
+        <div class="form-group">
+            <label for="time-limit">Time Limit (minutes):</label>
+            <input type="number" id="time-limit" value="2" min="1">
+        </div>
+        <div class="form-group">
+            <label for="file-prefix">File Name Prefix:</label>
+            <input type="text" id="file-prefix" placeholder="Enter file prefix">
+        </div>
+        <button onclick="savePolls()">💾 Save Polls</button>
+    </div>
+
+    <script>
+        const topics = [];
+
+        function escapeXML(str) {
+            return str.replace(/[<>&'"]/g, function (char) {
+                switch (char) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                }
+            });
+        }
+
+        function addTopic() {
+            const topicName = document.getElementById("topic-name").value.trim();
+            if (!topicName) {
+                alert("Please enter a topic name.");
+                return;
+            }
+
+            topics.push({
+                name: topicName
+            });
+
+            document.getElementById("topic-name").value = "";
+            renderTopics();
+        }
+
+        function renderTopics() {
+            const topicsDiv = document.getElementById("topics");
+            topicsDiv.innerHTML = "<h2>Created Topics</h2>";
+            topics.forEach((topic, index) => {
+                const topicDiv = document.createElement("div");
+                topicDiv.innerHTML = `
+                    <strong>${index + 1}. ${escapeXML(topic.name)}</strong>
+                    <br>
+                    <button onclick="deleteTopic(${index})">Delete</button>
+                `;
+                topicsDiv.appendChild(topicDiv);
+            });
+        }
+
+        function deleteTopic(index) {
+            topics.splice(index, 1);
+            renderTopics();
+        }
+
+        function validateOptions() {
+            const responseInput = document.getElementById("response-options").value.trim();
+
+            if (!responseInput) {
+                alert("Response options cannot be empty.");
+                return false;
+            }
+            return true;
+        }
+
+        function validateTimeLimit() {
+            const timeLimit = document.getElementById("time-limit").value;
+            if (isNaN(timeLimit) || timeLimit <= 0) {
+                alert("Time limit must be a positive number.");
+                return false;
+            }
+            return true;
+        }
+
+        function generatePollXML(pollType, timeLimit, responseOptions) {
+            const alarm = `${timeLimit}:0`;
+            let xml = `<?xml version="1.0" encoding="UTF-16"?>\n`;
+            xml += `<POLL TYPE="named" SHOWTIMER="yes" ALARM="${escapeXML(alarm)}" NOANSWER="no" SHOWRESPONSE="yes">\n`;
+            topics.forEach(topic => {
+                xml += `<QUESTION TYPE="mcone" TITLE="${escapeXML(topic.name)}">\n`;
+                responseOptions.forEach(option => {
+                    xml += `<ANSWER>${escapeXML(option)}</ANSWER>\n`;
+                });
+                xml += `</QUESTION>\n`;
+            });
+            xml += "</POLL>";
+            return xml;
+        }
+
+        function savePolls() {
+            try {
+                if (!validateOptions() || !validateTimeLimit()) {
+                    return;
+                }
+
+                const responseInput = document.getElementById("response-options").value.trim();
+                const responseOptions = responseInput.split(",").map(option => option.trim());
+                const timeLimit = document.getElementById("time-limit").value || 2;
+                const filePrefix = document.getElementById("file-prefix").value.trim() || "poll";
+
+                if (topics.length === 0) {
+                    alert("No topics to save.");
+                    return;
+                }
+
+                // Save entrance poll
+                const entranceXML = generatePollXML("entrance", timeLimit, responseOptions);
+                const entranceBlob = new Blob([entranceXML], { type: "text/xml" });
+                const entranceLink = document.createElement("a");
+                entranceLink.href = URL.createObjectURL(entranceBlob);
+                entranceLink.download = `${filePrefix}_entrance_poll.atp`;
+                entranceLink.click();
+
+                // Save exit poll
+                const exitXML = generatePollXML("exit", timeLimit, responseOptions);
+                const exitBlob = new Blob([exitXML], { type: "text/xml" });
+                const exitLink = document.createElement("a");
+                exitLink.href = URL.createObjectURL(exitBlob);
+                exitLink.download = `${filePrefix}_exit_poll.atp`;
+                exitLink.click();
+            } catch (error) {
+                alert("An error occurred while saving the polls: " + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
