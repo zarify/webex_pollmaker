@@ -9,5 +9,6 @@ This is a repo with some tools for creating poll files (`.atp` but really just X
 - There's a `CORRECT` attribute in the answer field, but Webex doesn't seem to do anything with this. I kept it in because maybe it will do something one day.
 - Webex activity reports will save poll results, so don't feel like you need to save the poll results web page that Webex gives you a link to (although it is nicer to look at than the CSV file of poll results)
 - I *think* the 'no answer' attribute for the poll just lets people finish the poll without responding to a question?
+- Showing results of multi-choice and multi-select during meetings is fine, but short answers just aren't displayed nicely. Nothing to do with this tool, just an FYI if you want to give respondents an idea of what is entered in the poll during the meeting.
 
 Overall I couldn't find any documentation of the format or options anywhere, and anyone serious about polling in Webex will probably just use one of the apps from the polling and surveying ecosystem (if your institution lets you do that).
