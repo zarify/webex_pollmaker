@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lesson Poll Creator</title>
+    <title>Vibe check poll creator</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -52,7 +52,7 @@
     </style>
 </head>
 <body>
-    <h1>Lesson Poll Creator</h1>
+    <h1>Vibe check poll creator</h1>
     <div class="section">
         <h2>Topics</h2>
         <div class="form-group">
@@ -68,7 +68,7 @@
         <h2>Config</h2>
         <div class="form-group">
             <label for="response-options">Response Options:</label>
-            <input type="text" id="response-options" placeholder="Comma-separated (e.g., none, some, lots)">
+            <input type="text" id="response-options" placeholder="Comma-separated (e.g., none, some, lots)" value="not at all, ok, perfectly">
         </div>
         <div class="form-group">
             <label for="time-limit">Time Limit (minutes):</label>
@@ -78,7 +78,7 @@
             <label for="file-prefix">File Name Prefix:</label>
             <input type="text" id="file-prefix" placeholder="Enter file prefix">
         </div>
-        <button onclick="savePolls()">💾 Save Polls</button>
+        <button onclick="savePolls()">💾 Save Poll</button>
     </div>
 
     <script>
@@ -180,14 +180,6 @@
                     return;
                 }
 
-                // Save entrance poll
-                const entranceXML = generatePollXML("entrance", timeLimit, responseOptions);
-                const entranceBlob = new Blob([entranceXML], { type: "text/xml" });
-                const entranceLink = document.createElement("a");
-                entranceLink.href = URL.createObjectURL(entranceBlob);
-                entranceLink.download = `${filePrefix}_entrance_poll.atp`;
-                entranceLink.click();
-
                 // Save exit poll
                 const exitXML = generatePollXML("exit", timeLimit, responseOptions);
                 const exitBlob = new Blob([exitXML], { type: "text/xml" });
@@ -196,7 +188,7 @@
                 exitLink.download = `${filePrefix}_exit_poll.atp`;
                 exitLink.click();
             } catch (error) {
-                alert("An error occurred while saving the polls: " + error.message);
+                alert("An error occurred while saving the poll: " + error.message);
             }
         }
     </script>
