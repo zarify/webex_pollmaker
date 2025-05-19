@@ -49,6 +49,10 @@
         button:hover {
             background-color: #0056b3;
         }
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
@@ -78,7 +82,10 @@
             <label for="file-prefix">File Name Prefix:</label>
             <input type="text" id="file-prefix" placeholder="Enter file prefix">
         </div>
-        <button onclick="savePolls()">💾 Save Poll</button>
+        <div class="button-row">
+            <button onclick="savePolls()">💾 Save Poll</button>
+            <button onclick="resetAll()" type="button">Reset</button>
+        </div>
     </div>
 
     <script>
@@ -180,6 +187,9 @@
                     return;
                 }
 
+                // Save response options to localStorage
+                localStorage.setItem('webex-poll-maker-responseOptions', responseInput);
+
                 // Save exit poll
                 const exitXML = generatePollXML("exit", timeLimit, responseOptions);
                 const exitBlob = new Blob([exitXML], { type: "text/xml" });
@@ -191,6 +201,21 @@
                 alert("An error occurred while saving the poll: " + error.message);
             }
         }
+
+        function resetAll() {
+            topics.length = 0;
+            renderTopics();
+            document.getElementById("file-prefix").value = "";
+        }
+
+        // Load response options from localStorage on page load
+        window.onload = function() {
+            const savedOptions = localStorage.getItem('webex-poll-maker-responseOptions');
+            if (savedOptions) {
+                document.getElementById("response-options").value = savedOptions;
+            }
+            renderTopics();
+        };
     </script>
 </body>
 </html>
