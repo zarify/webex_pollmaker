@@ -1,3 +1,8 @@
+# Deprecated
+___________________
+
+Webex have retired the version of the platform that supported these polls (which is a shame, since although the Slido polls that have replaced them are more feature rich, they are slow and sluggish within Webex).
+
 # Webex poll creators
 ___________________
 
